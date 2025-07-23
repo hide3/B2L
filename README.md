@@ -2,82 +2,113 @@
 B2L basketball league
 
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-interface ScoreboardHeaderProps {
-  homeScore: number;
-  awayScore: number;
-  homeFouls: number;
-  awayFouls: number;
-  homeTimeouts: number;
-  awayTimeouts: number;
-  quarter: number;
+interface PlayerSelectionModalProps {
+  isOpen: boolean;
+  team: 'home' | 'away';
+  points: number;
+  onSelect: (playerNumber: number) => void;
+  onMiss: (playerNumber: number) => void;
+  onClose: () => void;
 }
 
-const TimeoutIndicator: React.FC<{ count: number; color: string }> = ({ count, color }) => (
-  <div className="flex items-center gap-1.5">
-    <span>T.O.</span>
-    <div className="flex gap-1">
-      {Array.from({ length: 1 }).map((_, i) => (
-        <div 
-          key={i} 
-          className={`w-3 h-3 rounded-full transition-colors duration-300 ${i < count ? color : 'bg-gray-600'}`}
-        ></div>
-      ))}
-    </div>
-  </div>
-);
+const PLAYER_NUMBERS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 99];
 
-const ScoreboardHeader: React.FC<ScoreboardHeaderProps> = ({
-  homeScore,
-  awayScore,
-  homeFouls,
-  awayFouls,
-  homeTimeouts,
-  awayTimeouts,
-  quarter,
-}) => {
+const PlayerSelectionModal: React.FC<PlayerSelectionModalProps> = ({ isOpen, team, points, onSelect, onMiss, onClose }) => {
+  const [isMiss, setIsMiss] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsMiss(false); // Reset state when modal opens
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const teamName = team === 'home' ? 'HOME' : 'AWAY';
+  const teamColorClass = team === 'home' ? 'text-cyan-400' : 'text-rose-400';
+  const borderColor = team === 'home' ? 'border-cyan-500' : 'border-rose-500';
+  const buttonHoverColor = team === 'home' ? 'hover:bg-cyan-500' : 'hover:bg-rose-500';
+
+  const handleMissButtonClick = () => {
+    setIsMiss(true);
+  };
+
+  const handlePlayerClick = (playerNumber: number) => {
+    if (isMiss) {
+      onMiss(playerNumber);
+    } else {
+      onSelect(playerNumber);
+    }
+  };
+
   return (
-    <header className="w-full max-w-5xl bg-gray-950/80 backdrop-blur-sm border border-gray-700 rounded-xl p-3 md:p-4 shadow-2xl shadow-black/50">
-      <div className="flex justify-between items-center text-white">
-        {/* HOME Team */}
-        <div className="flex items-center gap-3 md:gap-4 w-1/3">
-          <span className="text-xl md:text-2xl font-bold text-cyan-400">HOME</span>
-          <span className="text-4xl md:text-5xl font-scoreboard text-white">{String(homeScore).padStart(2, '0')}</span>
+    <div 
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+        aria-modal="true"
+        role="dialog"
+    >
+      <div 
+        className={`bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border-2 ${borderColor} p-6 m-4 animate-fade-in`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-4">
+                <h2 className="text-2xl font-bold">
+                    {isMiss ? (
+                        <span className="text-orange-400">MISS</span>
+                    ) : (
+                        <>
+                            <span className={teamColorClass}>{teamName}</span> +{points}P
+                        </>
+                    )}
+                </h2>
+                {!isMiss && (
+                    <button 
+                        onClick={handleMissButtonClick} 
+                        className="bg-orange-600 hover:bg-orange-500 text-white font-bold py-1 px-3 rounded-md transition-colors text-sm"
+                        aria-label="Mark attempt as miss"
+                    >
+                        ミス
+                    </button>
+                )}
+            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label="閉じる">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
         </div>
 
-        {/* Quarter Info */}
-        <div className="flex flex-col items-center flex-shrink-0">
-          <div className="text-xl md:text-3xl font-bold font-scoreboard text-yellow-300 tracking-wider">
-            {quarter > 4 ? `OT${quarter - 4}` : `Q${quarter}`}
-          </div>
-        </div>
+        <p className="text-center text-gray-300 mb-6">
+            {isMiss ? 'ミスした選手の番号を選択してください' : '得点した選手の番号を選択してください'}
+        </p>
 
-        {/* AWAY Team */}
-        <div className="flex items-center justify-end gap-3 md:gap-4 w-1/3">
-          <span className="text-4xl md:text-5xl font-scoreboard text-white">{String(awayScore).padStart(2, '0')}</span>
-          <span className="text-xl md:text-2xl font-bold text-rose-400">AWAY</span>
+        <div className="grid grid-cols-4 gap-3">
+          {PLAYER_NUMBERS.map((number) => (
+            <button
+              key={number}
+              onClick={() => handlePlayerClick(number)}
+              className={`p-4 bg-gray-700 text-white font-bold rounded-lg text-xl transition-all duration-200 ease-in-out transform hover:scale-105 ${buttonHoverColor} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-yellow-400`}
+            >
+              #{number}
+            </button>
+          ))}
         </div>
       </div>
-
-      <div className="flex justify-between items-center mt-2 px-1 text-xs md:text-sm text-gray-300">
-        {/* HOME Details */}
-        <div className="flex items-center gap-3 md:gap-4 w-1/3">
-          <span className="font-semibold">Fouls: <span className="text-white">{homeFouls}</span></span>
-          <TimeoutIndicator count={homeTimeouts} color="bg-cyan-400" />
-        </div>
-
-        {/* Center Spacer */}
-        <div className="w-1/3"></div>
-
-        {/* AWAY Details */}
-        <div className="flex items-center justify-end gap-3 md:gap-4 w-1/3">
-          <TimeoutIndicator count={awayTimeouts} color="bg-rose-400" />
-          <span className="font-semibold">Fouls: <span className="text-white">{awayFouls}</span></span>
-        </div>
-      </div>
-    </header>
+      <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out forwards;
+        }
+      `}</style>
+    </div>
   );
 };
 
-export default ScoreboardHeader;
+export default PlayerSelectionModal;
